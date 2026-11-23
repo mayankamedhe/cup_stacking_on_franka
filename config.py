@@ -1,0 +1,42 @@
+"""All numbers you must measure on the real setup live here (metres, robot base frame).
+
+Use `python calibrate.py` to read poses by hand-guiding the arm.
+Every value marked PLACEHOLDER must be re-measured before running on the robot.
+"""
+import numpy as np
+
+# ---------------- Cup geometry (cups stand UPSIDE-DOWN, rim on the table) ----------------
+CUP_HEIGHT = 0.12      # PLACEHOLDER full cup height
+LAYER_HEIGHT = 0.118   # PLACEHOLDER rim of layer k sits k * LAYER_HEIGHT above the table
+                       #   (≈ CUP_HEIGHT; measure a 2-layer stack, it can be a few mm lower)
+CUP_SPACING = 0.095    # PLACEHOLDER centre-to-centre distance of neighbouring base cups
+                       #   (≈ rim diameter + ~5 mm gap). Upper cups sit centred between two.
+
+# ---------------- Gripper ----------------
+# z of the franka_tool frame when correctly grasping a cup that stands on the TABLE.
+# (Fingertips around the upturned base, ~1.5 cm below its top.)
+GRASP_Z = 0.10         # PLACEHOLDER
+OPEN_WIDTH = 0.08      # gripper opening before grasp (Franka max = 0.08)
+GRASP_WIDTH = 0.045    # PLACEHOLDER target width when closing on a cup (slightly < cup width there)
+GRASP_FORCE = 5.0      # N. Keep low: plastic cups crush easily.
+
+# Top-down gripper rotation with fingers opening along WORLD X (perpendicular to the pyramid row,
+# so fingers never hit neighbouring cups). PLACEHOLDER: replace with fa.get_pose().rotation.
+GRIPPER_ROTATION = np.array([[0, -1, 0],
+                             [-1, 0, 0],
+                             [0, 0, -1]], dtype=float)
+
+# ---------------- Pyramid placement ----------------
+PYRAMID_CENTER = [0.50, 0.0]  # PLACEHOLDER [x, y] of the middle of the base row; row runs along world y
+PLACE_DROP = 0.005            # release the cup this far above its support (don't push down)
+CLEARANCE = 0.05              # extra height above the tallest thing when travelling
+PRE_PLACE = 0.03              # slow down for the last few cm of a place
+
+# ---------------- Planner / safety ----------------
+HOME_XY = [0.31, 0.0]         # gripper xy after fa.reset_joints() (start point for travel cost)
+WORKSPACE = {"x": (0.25, 0.75), "y": (-0.40, 0.40)}  # every pick/place xy must be inside this box
+
+# Motion durations (s)
+TRAVEL_DURATION = 4.0
+VERTICAL_DURATION = 2.5
+SLOW_DURATION = 2.0
