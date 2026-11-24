@@ -6,18 +6,18 @@ Every value marked PLACEHOLDER must be re-measured before running on the robot.
 import numpy as np
 
 # ---------------- Cup geometry (cups stand UPSIDE-DOWN, rim on the table) ----------------
-CUP_HEIGHT = 0.12      # PLACEHOLDER full cup height
-LAYER_HEIGHT = 0.118   # PLACEHOLDER rim of layer k sits k * LAYER_HEIGHT above the table
+CUP_HEIGHT = 0.11      # PLACEHOLDER full cup height
+LAYER_HEIGHT = 0.09   # PLACEHOLDER rim of layer k sits k * LAYER_HEIGHT above the table
                        #   (≈ CUP_HEIGHT; measure a 2-layer stack, it can be a few mm lower)
-CUP_SPACING = 0.095    # PLACEHOLDER centre-to-centre distance of neighbouring base cups
+CUP_SPACING = 0.085    # PLACEHOLDER centre-to-centre distance of neighbouring base cups
                        #   (≈ rim diameter + ~5 mm gap). Upper cups sit centred between two.
 
 # ---------------- Gripper ----------------
 # z of the franka_tool frame when correctly grasping a cup that stands on the TABLE.
 # (Fingertips around the upturned base, ~1.5 cm below its top.)
-GRASP_Z = 0.10         # PLACEHOLDER
+GRASP_Z = 0.0997         # PLACEHOLDER
 OPEN_WIDTH = 0.08      # gripper opening before grasp (Franka max = 0.08)
-GRASP_WIDTH = 0.045    # PLACEHOLDER target width when closing on a cup (slightly < cup width there)
+GRASP_WIDTH = 0.0696    # PLACEHOLDER target width when closing on a cup (slightly < cup width there)
 GRASP_FORCE = 5.0      # N. Keep low: plastic cups crush easily.
 
 # Top-down gripper rotation with fingers opening along WORLD X (perpendicular to the pyramid row,
@@ -27,7 +27,7 @@ GRIPPER_ROTATION = np.array([[0, -1, 0],
                              [0, 0, -1]], dtype=float)
 
 # ---------------- Pyramid placement ----------------
-PYRAMID_CENTER = [0.50, 0.0]  # PLACEHOLDER [x, y] of the middle of the base row; row runs along world y
+PYRAMID_CENTER = [0.5178, 0.0134]  # PLACEHOLDER [x, y] of the middle of the base row; row runs along world y
 PLACE_DROP = 0.005            # release the cup this far above its support (don't push down)
 CLEARANCE = 0.05              # extra height above the tallest thing when travelling
 PRE_PLACE = 0.03              # slow down for the last few cm of a place

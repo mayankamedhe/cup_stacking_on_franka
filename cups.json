@@ -1,12 +1,12 @@
 {
   "_comment": "PLACEHOLDER positions. xy = centre of each upside-down cup on the table (robot base frame, metres). Measure with calibrate.py.",
   "cups": [
-    {"id": "y1", "color": "yellow", "xy": [0.40,  0.30]},
-    {"id": "y2", "color": "yellow", "xy": [0.52,  0.30]},
-    {"id": "y3", "color": "yellow", "xy": [0.64,  0.30]},
-    {"id": "o1", "color": "orange", "xy": [0.40, -0.30]},
-    {"id": "o2", "color": "orange", "xy": [0.52, -0.30]},
-    {"id": "r1", "color": "red",    "xy": [0.64, -0.30]},
-    {"id": "b1", "color": "blue",   "xy": [0.35,  0.18]}
+    {"id": "y1", "color": "yellow", "xy": [0.5249, -0.2528]},
+    {"id": "y2", "color": "yellow", "xy": [0.5249, -0.2528]},
+    {"id": "y3", "color": "yellow", "xy": [0.5249, -0.2528]},
+    {"id": "o1", "color": "orange", "xy": [0.5249, -0.2528]},
+    {"id": "o2", "color": "orange", "xy": [0.5249, -0.2528]},
+    {"id": "r1", "color": "red",    "xy": [0.5249, -0.2528]},
+    {"id": "b1", "color": "blue",   "xy": [0.5249, -0.2528]}
   ]
 }

@@ -1,0 +1,2 @@
+time,goal,layer_by_layer,n_cups_available,n_moves,moves_completed,planned_travel_m,plan_ms,exec_s,success,notes
+2026-11-24T17:57:06,"base layer of yellow, 2nd layer of orange, top red",False,7,6,6,1.456,0.4,253.7,y,looks good
