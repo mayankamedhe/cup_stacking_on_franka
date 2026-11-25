@@ -1,0 +1,4 @@
+# Install in the same Python environment as your existing ROS1 + FrankaPy setup.
+numpy>=1.17
+matplotlib>=3.3
+# tkinter comes from the OS (Ubuntu: python3-tk), not pip.

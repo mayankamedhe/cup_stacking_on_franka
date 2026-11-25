@@ -40,3 +40,16 @@ WORKSPACE = {"x": (0.25, 0.75), "y": (-0.40, 0.40)}  # every pick/place xy must 
 TRAVEL_DURATION = 4.0
 VERTICAL_DURATION = 2.5
 SLOW_DURATION = 2.0
+
+# Desktop dashboard limits (franka_dashboard.py). Review for your actual setup.
+# These are application limits, not a collision model or hardware safety limits.
+GUI_Z_MIN = 0.04           # m, franka_tool origin in robot base frame
+GUI_Z_MAX = 0.75           # m
+GUI_MAX_TRANSLATION = 0.05 # m per Cartesian command
+GUI_MAX_ROTATION_DEG = 15  # degrees per Cartesian command
+GUI_MAX_JOINT_STEP_DEG = 10 # degrees per joint per command
+GUI_MAX_FORCE = 10.0       # N, norm of commanded Cartesian force
+GUI_MAX_TORQUE = 1.0       # Nm, norm of commanded Cartesian moment
+GUI_MAX_GRASP_FORCE = 20.0 # N; cup experiments should start with GRASP_FORCE
+GUI_CONTACT_FORCE = 20.0  # N per axis, FrankaPy contact termination threshold
+GUI_CONTACT_TORQUE = 3.0  # Nm per axis, FrankaPy contact termination threshold
