@@ -1,10 +1,10 @@
 {
-  "_comment": "PLACEHOLDER positions. xy = centre of each upside-down cup on the table (robot base frame, metres). Measure with calibrate.py.",
+  "_comment": "PLACEHOLDER positions. xy = centre of each upside-down cup on the table (robot base frame, metres). Measure with calibrate.py. Optional \"orientation\": \"down\" (rim on table, default) or \"up\" (rim on top): used by --dry-run/--skip-orientation-check, and compared with the probe result.",
   "cups": [
     {"id": "y1", "color": "yellow", "xy": [0.5249, -0.2528]},
     {"id": "y2", "color": "yellow", "xy": [0.5249, -0.2528]},
     {"id": "y3", "color": "yellow", "xy": [0.5249, -0.2528]},
-    {"id": "o1", "color": "orange", "xy": [0.5249, -0.2528]},
+    {"id": "o1", "color": "orange", "xy": [0.5249, -0.2528], "orientation": "up"},
     {"id": "o2", "color": "orange", "xy": [0.5249, -0.2528]},
     {"id": "r1", "color": "red",    "xy": [0.5249, -0.2528]},
     {"id": "b1", "color": "blue",   "xy": [0.5249, -0.2528]}

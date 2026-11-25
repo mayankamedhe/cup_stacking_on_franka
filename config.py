@@ -26,6 +26,36 @@ GRIPPER_ROTATION = np.array([[0, -1, 0],
                              [-1, 0, 0],
                              [0, 0, -1]], dtype=float)
 
+# ---------------- Orientation check ----------------
+# The gripper is lowered softly over the cup centre and we look at how far it got.
+#   "touch": fingers CLOSED. Base-up cup stops them at the top; rim-up cup lets them sink inside.
+#   "gauge": fingers at GAUGE_WIDTH. Base-up cup's narrow base passes between them; rim-up cup's
+#            wide rim stops them. (Diameter-based fallback. Needs cups.json xy within a few mm.)
+PROBE_MODE = "touch"
+PROBE_TOUCH_Z = 0.112    # PLACEHOLDER tool z when the fingertips just touch the top of an upside-down cup
+PROBE_DEPTH = 0.02       # aim this far below PROBE_TOUCH_Z; sinking > PROBE_DEPTH/2 decides
+GAUGE_WIDTH = 0.07       # PLACEHOLDER "gauge" only: midway between base and rim diameter, AND wider than
+                         #   the base-up cup PROBE_DEPTH below its top (it widens a few mm there)
+PROBE_Z_STIFFNESS = 150  # N/m in z during the probe -> pushes a base-up cup with only ~3 N
+PROBE_DURATION = 3.0
+
+# ---------------- Flip (rim-up cup -> upside-down, in place) ----------------
+TABLE_Z = 0.005          # PLACEHOLDER tool z when the fingertips touch the table
+# Centring: closed fingers go inside the rim-up cup, then OPEN against the inner wall
+# (Franka grips from the inside by spreading). Done twice (fingers along x, then y) so the cup
+# slides to the centre and its xy is known to ~1 mm before the tight side grasp.
+CENTER_Z = 0.09          # PLACEHOLDER tool z for the fingertips ~2 cm inside a rim-up cup
+CENTER_FORCE = 5.0       # N, outward
+# Side grasp: gripper horizontal, pointing along +world x (away from the robot), fingers
+# opening along world y. Grasp low on the cup (narrowest part of a rim-up cup, ~71-74 mm).
+SIDE_ROTATION = np.array([[0, 0, 1],
+                          [0, -1, 0],
+                          [1, 0, 0]], dtype=float)  # PLACEHOLDER: replace with fa.get_pose().rotation
+SIDE_GRASP_Z = 0.045     # PLACEHOLDER tool z for the side grasp. The hand must clear the table here.
+SIDE_APPROACH = 0.10     # start the side approach this far back (−x) from the cup centre
+SIDE_GRASP_WIDTH = 0.068 # PLACEHOLDER: slightly less than the cup width at SIDE_GRASP_Z
+FLIP_Z = 0.25            # tool z for the 180° wrist roll (the hand sweeps ~10 cm around the grasp point)
+
 # ---------------- Pyramid placement ----------------
 PYRAMID_CENTER = [0.5178, 0.0134]  # PLACEHOLDER [x, y] of the middle of the base row; row runs along world y
 PLACE_DROP = 0.005            # release the cup this far above its support (don't push down)

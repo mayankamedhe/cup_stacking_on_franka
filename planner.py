@@ -20,6 +20,7 @@ class Cup:
     id: str
     color: str
     xy: tuple
+    orientation: str = "down"  # expected: "down" (rim on table) or "up". Not used by the planner.
 
 
 @dataclass(frozen=True)

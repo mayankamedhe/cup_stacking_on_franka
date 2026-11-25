@@ -4,6 +4,7 @@ import math
 import random
 
 from goal_parser import GoalParseError, parse_goal
+from orientation import classify_probe, flipped_grasp_z, roll_target_q7
 from planner import Cup, InfeasibleError, build_slots, plan
 
 
@@ -86,6 +87,43 @@ def test_big_is_fast():
     dt = time.perf_counter() - t
     assert dt < 10, dt
     print(f"  10-cup pyramid, 13 cups available: {dt * 1000:.0f} ms")
+
+
+def test_orientation():
+    touch, depth = 0.112, 0.02
+    assert classify_probe(touch + 0.001, touch, depth) == "down"   # stopped on the solid base
+    assert classify_probe(touch - 0.004, touch, depth) == "down"   # base flexed a little
+    assert classify_probe(touch - 0.019, touch, depth) == "up"     # sank into the open rim
+    assert classify_probe(touch - 0.019, touch, depth, "gauge") == "down"  # narrow base fit the gap
+    assert classify_probe(touch + 0.001, touch, depth, "gauge") == "up"    # wide rim stopped it
+    try:
+        classify_probe(touch, touch, depth, "diameter")
+        raise AssertionError("bad mode should fail")
+    except ValueError:
+        pass
+    assert abs(roll_target_q7(-1.5) - (-1.5 + math.pi)) < 1e-9
+    assert abs(roll_target_q7(1.5) - (1.5 - math.pi)) < 1e-9
+    assert roll_target_q7(0.0) is None                             # +-pi both outside +-2.897
+    # gripped 4 cm above the table before the flip -> 4 cm below the new top after it
+    assert abs(flipped_grasp_z(0.045, 0.005, 0.11) - (0.005 + 0.11 - 0.04)) < 1e-9
+
+
+def test_cups_json_and_log():
+    import csv, json, os, tempfile
+    from main import load_cups, log_trial
+    with tempfile.TemporaryDirectory() as d:
+        cj = os.path.join(d, "cups.json")
+        json.dump({"cups": [{"id": "a", "color": "Red", "xy": [0.5, 0]},
+                            {"id": "b", "color": "red", "xy": [0.5, 0.1], "orientation": "UP"}]}, open(cj, "w"))
+        a, b = load_cups(cj)
+        assert (a.color, a.orientation, b.orientation) == ("red", "down", "up")
+        log = os.path.join(d, "log.csv")
+        log_trial(log, {"time": 1, "success": "y"})
+        log_trial(log, {"time": 2, "success": "n", "n_flipped_robot": 1})   # new column -> header merged
+        log_trial(log, {"time": 3, "success": "y", "n_flipped_robot": 0})
+        rows = list(csv.DictReader(open(log)))
+        assert [r["time"] for r in rows] == ["1", "2", "3"]
+        assert [r["n_flipped_robot"] for r in rows] == ["", "1", "0"]
 
 
 if __name__ == "__main__":

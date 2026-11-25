@@ -9,19 +9,22 @@ It plans which cup goes where, and in what order, then builds the pyramid with t
 [yellow] [yellow] [yellow]
 ```
 
+**To set up and run on the robot, follow [SETUP_AND_RUN.md](SETUP_AND_RUN.md). It lists every measurement and has a step-by-step first-run ladder.**
+
 ## Files
 | File | What it does |
 |---|---|
 | `goal_parser.py` | English text → pyramid layers (list of colours, base first). Rule-based, offline. |
+| `orientation.py` | Robot-free orientation logic: probe decision, 180° wrist-roll target, set-down height after a flip. |
 | `planner.py` | Builds the pyramid slot positions and runs an **A\*** planner. Returns an ordered list of (cup → slot). |
 | `main.py` | Command line: parse → plan → print → run on the robot (frankapy) → log the trial. |
 | `config.py` | **Every number you must measure** (cup size, grasp height, pyramid position, gripper rotation). |
-| `cups.json` | Start position and colour of each cup. |
-| `calibrate.py` | Hand-guide the arm and print its pose, to fill in `config.py` and `cups.json`. |
+| `cups.json` | Start position, colour and (optional) expected orientation of each cup. |
+| `calibrate.py` | Hand-guide the arm, close/open the gripper, and print pose, width and joints, to fill in `config.py` and `cups.json`. |
 | `test_planner.py` | Offline tests (no robot): parser cases, plan validity, optimality vs brute force, infeasibility. |
 
 ## Setup and assumptions
-- Cups stand **upside-down** on the table (rim down), spaced apart.
+- Cups start on the table either **upside-down** (rim down, needed for stacking) or **rim-up**, spaced apart. Rim-up cups are detected and flipped in place before the build (see below). Keep about 15 cm clear around each cup for the flip.
 - The pyramid is **2D**: a single row along world **y**, centred at `PYRAMID_CENTER`. Each upper cup sits across the upturned bases of the two cups below it.
 - The gripper always comes from straight above, with fingers opening along **world x**. That is across the row, so the fingers never hit neighbouring cups.
 - Slot 0 of each layer is at the **+y end**. For mixed layers (`"yellow red yellow"`), colours are listed from +y to −y.
@@ -37,6 +40,30 @@ It plans which cup goes where, and in what order, then builds the pyramid with t
 Why A\*: the task is to choose *which* cup of a colour fills each slot (assignment) **and** the *order* (bottom layers first, precedence). A\* solves both together, optimally, in under 50 ms for a 10-cup pyramid. If the cups can't make the goal (not enough of a colour), it says so before the robot moves. This is the same approach as Lab 3.
 
 `--layer-by-layer` makes the planner finish each layer before starting the next one. Without it, the planner may put an upper cup on top before the base row is complete, if that saves travel. That's an easy variable to compare in experiments.
+
+## Cup orientation (probe, then flip)
+A real run has three passes: **scan**, **flip**, **build**. Flipping in place doesn't move a cup, so the A\* plan is made first and stays valid.
+
+1. **Scan (touch probe).** For each cup the plan uses, the closed gripper is lowered over the cup centre, aiming `PROBE_DEPTH` (2 cm) below the top of an upside-down cup. The arm is soft in z (`PROBE_Z_STIFFNESS`).
+   - **Base up:** the solid base stops the fingers at the top, with a push of about 3 N.
+   - **Rim up:** the fingers sink into the open rim.
+
+   If they sink more than half of `PROBE_DEPTH`, the cup is rim-up.
+   **Fallback, `PROBE_MODE = "gauge"` (diameter based):** the fingers are set to `GAUGE_WIDTH`, between the base and rim diameters. The narrow base of a base-up cup passes between them, so they sink. The wide rim of a rim-up cup stops them. It uses the same `PROBE_TOUCH_Z` and `PROBE_DEPTH`, but cup positions must be accurate to a few mm. Use `--probe-only` to compare the two modes.
+   *Why not measure the diameter?* The taper is only about 1 cm (base about 70 mm, rim about 80 mm), and the Franka opens to 80 mm at most. Open fingers would land on the rim of a rim-up cup. The probe gives about a 2 cm signal and never has to reach around the rim.
+2. **Flip each rim-up cup, in place.**
+   1. *Centre:* the closed fingers go about 2 cm into the cup and **open** against the inner wall (the Franka can grip from the inside), once along x and once along y. The cup slides to within about 1 mm of the recorded xy. This matters because the next grasp has only about 3 mm of clearance per side.
+   2. *Side grasp:* the hand is horizontal, pointing along +x, fingers opening along y, low on the cup (`SIDE_GRASP_Z`).
+   3. Lift to `FLIP_Z`, then turn **joint 7 by 180°** (`goto_joints`). The cup is now upside-down.
+   4. Lower until the rim touches the table, release, back out along −x, and go home.
+
+   If joint 7 has no room for ±π (it must start near ±1.57), the robot puts the cup back, or never grasps it, and asks you to flip it by hand.
+3. **Build** as before.
+
+Flags:
+- `--skip-orientation-check`: don't probe; trust `"orientation"` in `cups.json` (missing means `"down"`).
+- `--probe-only`: probe every cup and compare with `cups.json`. This is the sensing-accuracy experiment.
+- `--step`: also pauses before every probe and flip.
 
 ## Goal language
 Separate layers with `,` `;` or `then`. Inside a layer, list colours with spaces or `and`.
@@ -56,8 +83,10 @@ python test_planner.py                                   # offline sanity check
 python main.py --goal "base layer of yellow, 2nd layer of orange, top red" --dry-run
 python main.py --goal "..." --step                       # on robot, Enter before each pick/place
 python main.py --goal "..." --layer-by-layer
+python main.py --probe-only                              # probe every cup, compare with cups.json
+python main.py --goal "..." --skip-orientation-check     # trust cups.json orientations, no probing
 ```
-`main.py` prints the plan and asks `Run on robot? [y/N]`. After the run it asks whether the pyramid came out correct, plus notes. It then appends a row to `experiments.csv` with goal, number of moves, moves completed, planned travel, plan time, execution time, success and notes.
+`main.py` prints the plan and asks `Run on robot? [y/N]`. After the run it asks whether the pyramid came out correct, plus notes. It then appends a row to `experiments.csv` with goal, number of moves, moves completed, planned travel, plan time, execution time, success and notes. It also records `orientation_check`, `n_rim_up`, `n_flipped_robot`, `n_flipped_hand`, `orientation_mismatches` (probe result vs `cups.json`) and `probe_sink_mm` (how far the fingers sank for each cup). When new columns appear, older CSV files are rewritten with the merged header.
 
 ## Before the first real run (calibration checklist)
 All values in `config.py` marked PLACEHOLDER. Use `python calibrate.py` (10 s of guide mode, then it prints the pose):
@@ -69,6 +98,10 @@ All values in `config.py` marked PLACEHOLDER. Use `python calibrate.py` (10 s of
 6. **`PYRAMID_CENTER`**: a free spot about 0.5 m in front of the robot.
 7. **`cups.json`**: place each cup, guide the gripper to its centre, copy x, y.
 
+8. **`PROBE_TOUCH_Z`**: close the gripper and guide the fingertips until they just touch the top of an upside-down cup. Copy z. Then run `--probe-only` on a mix of rim-up and rim-down cups. The `sink` values should be about 0 mm and about 20 mm.
+9. **`TABLE_Z`**: fingertips touching the table. **`CENTER_Z`**: closed fingertips about 2 cm inside a rim-up cup.
+10. **`SIDE_ROTATION`, `SIDE_GRASP_Z`, `SIDE_GRASP_WIDTH`**: guide the hand horizontal, pointing away from the robot, fingers around a rim-up cup as low as possible without the hand touching the table. Copy the rotation, z, and the width minus about 4 mm. Check the printed **joint 7 is near ±1.57**, otherwise the 180° roll won't fit. Test one flip with `--step` before trusting it. If low side moves stop unexpectedly, check frankapy's virtual walls (`FC.WORKSPACE_WALLS`).
+
 First run: use `--dry-run`, then `--step` with your hand on the e-stop.
 
 ## Suggested experiments
@@ -79,5 +112,6 @@ First run: use `--dry-run`, then `--step` with your hand on the e-stop.
 
 ## Limits and next steps
 - Cup positions are measured by hand (no camera). Replacing `cups.json` with a perception step is the natural next step; the planner doesn't change.
-- Open loop: the robot doesn't check whether a placement succeeded.
+- Open loop: the robot doesn't check whether a placement succeeded, or whether a flip worked. `--probe-only` afterwards can check flips.
+- Cups lying on their side aren't handled.
 - Only 2D pyramids. A 3D pyramid or nested tower would only need new slot geometry in `build_slots`.
