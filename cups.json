@@ -1,12 +1,11 @@
 {
-  "_comment": "PLACEHOLDER positions. xy = centre of each upside-down cup on the table (robot base frame, metres). Measure with calibrate.py. Optional \"orientation\": \"down\" (rim on table, default) or \"up\" (rim on top): used by --dry-run/--skip-orientation-check, and compared with the probe result.",
+  "_comment": "xy = centre of each cup on the table (robot base frame, metres), hand-guided 2026-11-25, listed in collection order. Cups were rearranged: spot 1 red (3rd layer), 2 orange, 3 yellow, 4 orange, 5 yellow, 6 yellow. Add \"orientation\": \"down\" (rim on table, default) or \"up\" (rim on top) per cup: used by --dry-run/--skip-orientation-check, and compared with the probe result.",
   "cups": [
-    {"id": "y1", "color": "yellow", "xy": [0.5249, -0.2528]},
-    {"id": "y2", "color": "yellow", "xy": [0.5249, -0.2528]},
-    {"id": "y3", "color": "yellow", "xy": [0.5249, -0.2528]},
-    {"id": "o1", "color": "orange", "xy": [0.5249, -0.2528], "orientation": "up"},
-    {"id": "o2", "color": "orange", "xy": [0.5249, -0.2528]},
-    {"id": "r1", "color": "red",    "xy": [0.5249, -0.2528]},
-    {"id": "b1", "color": "blue",   "xy": [0.5249, -0.2528]}
+    {"id": "r1", "color": "red",    "xy": [0.6326, -0.2432]},
+    {"id": "o1", "color": "orange", "xy": [0.5171, -0.2439]},
+    {"id": "y1", "color": "yellow", "xy": [0.4080, -0.2451]},
+    {"id": "o2", "color": "orange", "xy": [0.6470, 0.3226]},
+    {"id": "y2", "color": "yellow", "xy": [0.5265, 0.3282]},
+    {"id": "y3", "color": "yellow", "xy": [0.4147, 0.3257]}
   ]
 }

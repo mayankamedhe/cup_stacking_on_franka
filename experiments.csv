@@ -1,2 +1,7 @@
-time,goal,layer_by_layer,n_cups_available,n_moves,moves_completed,planned_travel_m,plan_ms,exec_s,success,notes
-2026-11-24T17:57:06,"base layer of yellow, 2nd layer of orange, top red",False,7,6,6,1.456,0.4,253.7,y,looks good
+time,goal,layer_by_layer,n_cups_available,n_moves,moves_completed,planned_travel_m,plan_ms,exec_s,success,notes,orientation_check,n_rim_up,n_flipped_robot,n_flipped_hand,orientation_mismatches,probe_sink_mm
+2026-11-24T17:57:06,"base layer of yellow, 2nd layer of orange, top red",False,7,6,6,1.456,0.4,253.7,y,looks good,,,,,,
+2026-11-25T16:21:41,"base layer of yellow, 2nd layer of orange, top red",False,7,6,0,3.261,0.4,160.1,n,couldn't pick up from shelf,touch,1,1,0,0,y1:18.7
+2026-11-25T16:27:28,"base layer of yellow, 2nd layer of orange, top red",False,7,6,0,3.261,0.6,158.7,n,"y1: up    rim pinch: fingers closed to 2.1 mm    side approach: q7 2.649    side grasp: width 59.3 mm, q7 2.623, z 0.5826 (cmd 0.5830)    set-down: target 0.6476, released at 0.6486 (peak 1.3 N)    landed: grasp hand [ 0.3279 -0.3252], release hand [ 0.3335 -0.2918] -> flipped cup at [ 0.328  -0.3162]",touch,1,1,0,0,y1:19.0
+2026-11-25T16:54:32,"base layer of yellow, 2nd layer of orange, top red",False,6,6,1,3.332,0.5,99.1,n,,touch,5,0,0,5,y3:1.0;y2:15.5;o1:22.9;y1:-281.8;o2:-281.7;r1:-281.5
+2026-11-25T17:14:59,"base layer of yellow, 2nd layer of orange, top red",False,6,6,6,3.332,0.4,532.6,y,nice,touch,1,1,0,1,y1:-2.2;y2:17.6;y3:1.4;o1:-0.0;o2:1.0;r1:2.0
+2026-11-25T18:29:10,"base layer of yellow, 2nd layer of orange, top red",False,6,6,6,3.562,0.2,649.5,y,,touch,2,2,0,2,y1:-1.9;y2:18.7;y3:1.4;o1:-0.3;o2:21.3;r1:2.3

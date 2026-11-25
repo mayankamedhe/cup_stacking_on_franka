@@ -131,3 +131,17 @@ if __name__ == "__main__":
         if name.startswith("test_"):
             fn()
             print("ok", name)
+
+
+def test_in_order_uses_list_order():
+    layers = [["yellow", "yellow", "yellow"], ["orange", "orange"], ["red"]]
+    slots = build_slots(layers, (0.5, 0.0), 0.085)
+    cups = [Cup("y1", "yellow", (0.63, -0.24)), Cup("y2", "yellow", (0.52, -0.24)),
+            Cup("y3", "yellow", (0.41, -0.25)), Cup("o1", "orange", (0.65, 0.32)),
+            Cup("o2", "orange", (0.53, 0.33)), Cup("r1", "red", (0.41, 0.33))]
+    steps, _ = plan(cups, slots, (0.31, 0.0), in_order=True)
+    assert [c.id for c, _ in steps] == ["y1", "y2", "y3", "o1", "o2", "r1"]
+    # red/orange listed first: they wait until something can support them
+    mixed = [cups[5], cups[3], cups[0], cups[4], cups[1], cups[2]]
+    steps, _ = plan(mixed, slots, (0.31, 0.0), layer_by_layer=True, in_order=True)
+    assert [c.id for c, _ in steps] == ["y1", "y2", "y3", "o1", "o2", "r1"]

@@ -1,0 +1,29 @@
+WARNING:root:autolab_core not installed as catkin package, RigidTransform ros methods will be unavailable
+    probe: reached z 0.1300 (target 0.1010), peak force 6.4 N -> CONTACT
+  y3: down (sank 1.0 mm)
+    probe: reached z 0.1155 (target 0.1010), peak force 3.4 N
+  y2: up (sank 15.5 mm)  [cups.json says down]
+    probe: reached z 0.1081 (target 0.1010), peak force 2.3 N
+  o1: up (sank 22.9 mm)  [cups.json says down]
+    probe: reached z 0.4128 (target 0.1010), peak force 0.1 N
+  y1: up (sank -281.8 mm)  [cups.json says down]
+    probe: reached z 0.4127 (target 0.1010), peak force 0.0 N
+  o2: up (sank -281.7 mm)  [cups.json says down]
+    probe: reached z 0.4125 (target 0.1010), peak force 0.1 N
+  r1: up (sank -281.5 mm)  [cups.json says down]
+^CDid the pyramid end up correct? [y/n] n
+Notes (failure mode, which step, etc.): 
+Logged to experiments.csv
+
+
+{
+  "_comment": "xy = centre of each cup on the table (robot base frame, metres), hand-guided 2026-11-25. Add \"orientation\": \"down\" (rim on table, default) or \"up\" (rim on top) per cup: used by --dry-run/--skip-orientation-check, and compared with the probe result.",
+  "cups": [
+    {"id": "y1", "color": "yellow", "xy": [0.6326, -0.2432]},
+    {"id": "y2", "color": "yellow", "xy": [0.5171, -0.2439]},
+    {"id": "y3", "color": "yellow", "xy": [0.4080, -0.2451]},
+    {"id": "o1", "color": "orange", "xy": [0.6470, 0.3226]},
+    {"id": "o2", "color": "orange", "xy": [0.5265, 0.3282]},
+    {"id": "r1", "color": "red",    "xy": [0.4147, 0.3257]}
+  ]
+}

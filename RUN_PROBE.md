@@ -51,7 +51,8 @@ The robot touches each cup and prints one line per cup:
 |---|---|
 | Every cup says `up` | `PROBE_TOUCH_Z` is too high. Measure step 2 again. |
 | Every cup says `down` | `PROBE_TOUCH_Z` is too low, or a cup's `xy` is off-centre. Measure again. |
-| The probe pushes cups around | Lower `PROBE_Z_STIFFNESS` in `config.py`, for example to `100`. |
+| The probe pushes cups around | Lower `PROBE_FORCE` in `config.py` (e.g. `3.0`) or raise `PROBE_DURATION` (slower descent). |
+| Rim-up cups stop early (`CONTACT` printed with nothing touched) | Force noise: raise `PROBE_FORCE` a little (e.g. `6.0`) or slow the descent. |
 
 ---
 

@@ -59,9 +59,12 @@ def check_colors(cups, slots):
                               ", ".join(f"need {n} more {col}" for col, n in short.items()))
 
 
-def plan(cups, slots, start_xy, layer_by_layer=False):
+def plan(cups, slots, start_xy, layer_by_layer=False, in_order=False):
     """Returns (steps, cost): steps = [(Cup, Slot), ...] in execution order.
-    layer_by_layer=True: finish each layer before starting the next (more conservative)."""
+    layer_by_layer=True: finish each layer before starting the next (more conservative).
+    in_order=True: the next cup is always the first unused cup in list order that can be placed
+    right now (a free slot of its colour whose supports are filled); cups that can't go yet wait
+    their turn. Only the slot for each cup is chosen."""
     check_colors(cups, slots)
     d = math.dist
     nS, nC = len(slots), len(cups)
@@ -97,8 +100,13 @@ def plan(cups, slots, start_xy, layer_by_layer=False):
                 continue
             if layer_by_layer and filled & below[s] != below[s]:
                 continue
+            if in_order:
+                ready = {slots[t].color for t in range(nS) if not filled >> t & 1
+                         and all(filled >> u & 1 for u in slots[t].supports)
+                         and not (layer_by_layer and filled & below[t] != below[t])}
+                nxt_c = next((c for c in range(nC) if not used >> c & 1 and cups[c].color in ready), None)
             for c in match[s]:
-                if used >> c & 1:
+                if used >> c & 1 or (in_order and c != nxt_c):
                     continue
                 nxt = (filled | 1 << s, used | 1 << c, s)
                 cost = g[state] + reach[pos][c] + carry[c][s]

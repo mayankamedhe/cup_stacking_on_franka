@@ -94,7 +94,7 @@ The fingers should **spread and press on the inside wall**, which centres the cu
 |---|---|---|
 | `PROBE_MODE` | `"touch"` | Switch to `"gauge"` only if touch keeps getting it wrong. |
 | `PROBE_DEPTH` | 0.02 | Lower it if the probe pushes cups around. Raise it if the sink values for "up" and "down" are too close. |
-| `PROBE_Z_STIFFNESS` | 150 N/m | Lower it if the probe dents cups. Raise it if base-up cups still read as about 10 mm sink. |
+| `PROBE_FORCE` | 4 N | Contact threshold for the probe descent. Lower it if the probe dents cups. Raise it if rim-up cups stop early on force noise. |
 | `GRASP_FORCE`, `CENTER_FORCE` | 5 N | Lower them if cups crush. Raise them if cups slip. |
 | `FLIP_Z` | 0.25 | Raise it if the hand or cup comes close to anything during the wrist turn. |
 | `SIDE_APPROACH` | 0.10 | Raise it if the horizontal hand touches the cup on the way in. |
@@ -137,7 +137,7 @@ After each run it asks whether the pyramid came out right, plus any notes, and a
 |---|---|---|
 | Every cup reads `up` | `PROBE_TOUCH_Z` too high | Measure step 4 again. |
 | Every cup reads `down` | `PROBE_TOUCH_Z` too low, or `cups.json` xy is off the cup centre | Measure step 4 or step 9 again. |
-| Probe pushes or tips cups | Too stiff or too deep | Lower `PROBE_Z_STIFFNESS` or `PROBE_DEPTH`. |
+| Probe pushes or tips cups | Too stiff or too deep | Lower `PROBE_FORCE` or raise `PROBE_DURATION`. |
 | Fingers hit the cup during the side grasp | Cup too wide at the grip height, or not centred | Check the feasibility table in section 1. Check that the centring step moves the cup. |
 | Arm stops on low side moves with no contact | frankapy virtual walls | Check `FC.WORKSPACE_WALLS` in frankapy. |
 | "Wrist can't roll 180°" on every cup | Joint 7 isn't near ±1.57 at the side grasp | Measure `SIDE_ROTATION` again (step 7) with the wrist turned so joint 7 is near ±1.57. |

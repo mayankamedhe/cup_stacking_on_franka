@@ -44,7 +44,7 @@ Why A\*: the task is to choose *which* cup of a colour fills each slot (assignme
 ## Cup orientation (probe, then flip)
 A real run has three passes: **scan**, **flip**, **build**. Flipping in place doesn't move a cup, so the A\* plan is made first and stays valid.
 
-1. **Scan (touch probe).** For each cup the plan uses, the closed gripper is lowered over the cup centre, aiming `PROBE_DEPTH` (2 cm) below the top of an upside-down cup. The arm is soft in z (`PROBE_Z_STIFFNESS`).
+1. **Scan (touch probe).** For each cup the plan uses, the closed gripper is lowered over the cup centre, aiming `PROBE_DEPTH` (2 cm) below the top of an upside-down cup. It descends slowly and stops as soon as the sensed contact force rises by `PROBE_FORCE`.
    - **Base up:** the solid base stops the fingers at the top, with a push of about 3 N.
    - **Rim up:** the fingers sink into the open rim.
 
