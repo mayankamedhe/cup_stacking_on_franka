@@ -16,6 +16,8 @@ It plans which cup goes where, and in what order, then builds the pyramid with t
 |---|---|
 | `goal_parser.py` | English text → pyramid layers (list of colours, base first). Rule-based, offline. |
 | `orientation.py` | Robot-free orientation logic: probe decision, 180° wrist-roll target, set-down height after a flip. |
+| `stack_pickup.py` | Force-guided top detection and grasp, rising shimmy, optional payload-band verification for one rim-down source stack. |
+| `stack_cups.example.json` | Example physical stack inventory, listed top to bottom. |
 | `planner.py` | Builds the pyramid slot positions and runs an **A\*** planner. Returns an ordered list of (cup → slot). |
 | `main.py` | Command line: parse → plan → print → run on the robot (frankapy) → log the trial. |
 | `config.py` | **Every number you must measure** (cup size, grasp height, pyramid position, gripper rotation). |
@@ -40,6 +42,68 @@ It plans which cup goes where, and in what order, then builds the pyramid with t
 Why A\*: the task is to choose *which* cup of a colour fills each slot (assignment) **and** the *order* (bottom layers first, precedence). A\* solves both together, optimally, in under 50 ms for a 10-cup pyramid. If the cups can't make the goal (not enough of a colour), it says so before the robot moves. This is the same approach as Lab 3.
 
 `--layer-by-layer` makes the planner finish each layer before starting the next one. Without it, the planner may put an upper cup on top before the base row is complete, if that saves travel. That's an easy variable to compare in experiments.
+
+## Picking from a nested rim-down stack
+
+Use `--from-stack` when cups are nested at one fixed `STACK_XY`. All source cups
+must already be **rim down**. This mode bypasses the table orientation scan and
+flip passes. List the cups in physical **top-to-bottom order** in the cups JSON;
+the planner only consumes that prefix in order and refuses plans that would
+require reaching a buried cup. Remaining cups can stay at the bottom. JSON XY
+values are overridden by `STACK_XY`, and table-orientation annotations are
+ignored in favour of the rim-down stack assumption. Colours are inventory metadata,
+not sensed; the physical stack must match the listed order.
+
+```bash
+python main.py --from-stack --cups stack_cups.example.json \
+  --goal "base yellow, middle orange, top red" --dry-run
+
+# After measuring the required STACK_* settings in config.py:
+python main.py --stack-probe-only
+python main.py --from-stack --cups stack_cups.example.json \
+  --goal "base yellow, middle orange, top red" --step
+```
+
+For **each pickup**, the robot closes the empty fingers, takes a stationary
+force baseline above the stack, and descends slowly with low Z stiffness. Three
+consecutive upward base-frame Fz readings above `STACK_CONTACT_FORCE` trigger
+a stop. The **measured tool Z at contact** sets the grasp height via
+`STACK_GRASP_OFFSET_Z`. Heights are re-probed every time; no cup-height or
+nesting-pitch subtraction is used. An empty/missed stack, excessive force,
+aborted motion, or noisy baseline stops the operation instead of guessing Z.
+Clearance height includes the maximum source-stack height and carried-cup height.
+
+After grasping, a 3 mm initial lift is followed by two slow loops of ±2 mm XY
+and alternating ±2° yaw, rising 4 mm per loop by default. The last waypoint
+returns to the stack centre and original orientation; the cup is then raised
+vertically to clearance. Tune `STACK_SHIMMY_*` for the cups and a fixture that
+keeps the lower stack from sliding or tipping. These are bounded min-jerk
+motions, not an impulsive high-speed shake. Extraction is monitored against
+`STACK_MAX_FORCE` and `STACK_MAX_TORQUE`.
+
+**Separation motion alone does not prove that exactly one cup was picked.**
+The program reports a stationary payload estimate in N after each pickup.
+Optional `STACK_SINGLE_WEIGHT` / `STACK_WEIGHT_TOLERANCE` compare that estimate
+with a calibrated one-cup band. The empty and loaded samples use the same
+clearance pose and similar finger width. Zero-cup / multi-cup readings outside
+the band, or noise too large to resolve it, stop before placement. The band
+tolerance must be less than half one cup's weight; measured noise adds an
+uncertainty allowance. This remains an estimator-based check, sensitive to load
+models, drift, and cup variability. For light cups below the arm estimator's
+usable resolution, use an independent sensor/visual inspection or a mechanical
+single-cup dispenser. With the band disabled, output explicitly says **cup count
+UNVERIFIED**; `--step` lets you inspect the held cup before placement.
+
+See [the stack setup instructions](SETUP_AND_RUN.md#6-nested-rim-down-stack-source)
+for the three required height measurements. Failed stack runs request a stop,
+keep the gripper commanded, and skip automatic opening/homing. Inspect the
+robot before recovery. Monitoring runs through Python/ROS and cannot replace
+the physical stop or guarantee a hard travel/force bound. Logs include measured
+contact/grasp heights, payload estimates, and the payload-band result.
+
+```bash
+python -m unittest test_stack_pickup -v
+```
 
 ## Cup orientation (probe, then flip)
 A real run has three passes: **scan**, **flip**, **build**. Flipping in place doesn't move a cup, so the A\* plan is made first and stays valid.

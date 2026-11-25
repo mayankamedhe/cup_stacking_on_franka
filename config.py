@@ -70,3 +70,30 @@ WORKSPACE = {"x": (0.25, 0.75), "y": (-0.40, 0.40)}  # every pick/place xy must 
 TRAVEL_DURATION = 4.0
 VERTICAL_DURATION = 2.5
 SLOW_DURATION = 2.0
+
+# ---------------- Nested rim-down source stack (--from-stack) ----------------
+# cups JSON order is physical TOP -> BOTTOM. All source cups must be rim-down.
+STACK_XY = [0.5249, -0.2528]  # PLACEHOLDER fixed source centre in robot base frame
+STACK_SEARCH_TOP_Z = None     # REQUIRED tool z safely above the tallest loaded stack
+STACK_SEARCH_BOTTOM_Z = None  # REQUIRED lowest safe probe tool z, ABOVE empty-table contact
+STACK_GRASP_OFFSET_Z = None   # REQUIRED grasp tool z minus closed-finger top-contact tool z (negative)
+STACK_MIN_TOOL_Z = 0.04       # PLACEHOLDER lower bound for every stack motion
+STACK_MAX_TOOL_Z = 0.75       # PLACEHOLDER upper bound; includes carried cup / stack clearance
+STACK_PROBE_SPEED = 0.004     # m/s nominal descent; contact determines actual pickup z every time
+STACK_PROBE_STIFFNESS = 150   # N/m in z during search; not a force limit
+STACK_CONTACT_FORCE = 1.5     # N, upward base-frame Fz above the empty-hand baseline
+STACK_CONTACT_SAMPLES = 3    # consecutive in-motion samples required to confirm contact
+STACK_MAX_FORCE = 6.0         # N, baseline-relative force norm: stop on excessive pulling/contact
+STACK_MAX_TORQUE = 1.0        # Nm, baseline-relative moment norm
+STACK_FORCE_NOISE = 0.15      # N, max stationary per-axis std; tune from measured sensor noise
+STACK_INITIAL_LIFT = 0.003    # m before separation motion; avoid lifting the whole nested stack
+STACK_SHIMMY_XY = 0.002       # m lateral amplitude about fixed stack centre
+STACK_SHIMMY_YAW_DEG = 2.0    # degrees about base Z, alternating with lateral motion
+STACK_SHIMMY_CYCLES = 2
+STACK_SHIMMY_RISE = 0.004     # m of upward peel per cycle
+STACK_SHIMMY_DURATION = 0.8   # s per waypoint; slow min-jerk segments, not an impulsive shake
+# Optional verification: calibrated extra downward Fz from ONE suspended cup.
+# Leave both None to perform separation with an explicitly UNVERIFIED cup count.
+# Lightweight cups may be below the arm estimator's usable resolution.
+STACK_SINGLE_WEIGHT = None    # N, measured with identical payload model and clearance pose
+STACK_WEIGHT_TOLERANCE = None # N, must be < half one cup's weight to separate 0/1/2 cup bands

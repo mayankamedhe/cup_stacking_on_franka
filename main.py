@@ -13,6 +13,7 @@ import datetime
 import json
 import os
 import time
+from dataclasses import replace
 
 import numpy as np
 
@@ -20,6 +21,7 @@ import config as C
 from goal_parser import GoalParseError, parse_goal
 from orientation import ORIENTATIONS, classify_probe, flipped_grasp_z, roll_target_q7
 from planner import Cup, InfeasibleError, build_slots, plan, render
+from stack_pickup import StackPicker, StackPickupError, validate_stack_config
 
 
 def load_cups(path):
@@ -183,6 +185,66 @@ def probe_only(cups):
     print(f"{len(cups) - wrong}/{len(cups)} match cups.json")
 
 
+def stack_probe_only():
+    """Locate the current top without grasping; useful after stack calibration."""
+    validate_stack_config()
+    robot = Robot(1)
+    picker = StackPicker(robot)
+    try:
+        top = picker.find_top()
+        picker._move(picker.xy, picker.clear_z, C.VERTICAL_DURATION)
+        print(f"Stack top tool Z: {top:.4f} m; grasp tool Z: {top+C.STACK_GRASP_OFFSET_Z:.4f} m")
+    except BaseException:
+        robot.fa.stop_skill()
+        # A failed contact search must not trigger an automatic home trajectory.
+        raise
+
+
+def run_from_stack(args, layers, cups, steps, cost, plan_ms):
+    """Stack source bypasses the table orientation scan and flip passes."""
+    robot = Robot(len(layers))
+    picker = StackPicker(robot)
+    started = time.perf_counter()
+    done, failure = 0, None
+    try:
+        for i, (cup, slot) in enumerate(steps, 1):
+            if args.step:
+                input(f"[stack {i}/{len(steps)}] Enter to find top, grasp and separate {cup.id} ...")
+            picker.pick()
+            if args.step:
+                input(f"[{i}/{len(steps)}] Inspect the held cup; Enter to place on layer {slot.layer+1} ...")
+            robot.place(slot.xy, slot.layer)
+            done = i
+        robot.home()
+    except BaseException as exc:
+        failure = f"{type(exc).__name__}: {exc}"
+        try:
+            robot.fa.stop_skill()
+            robot.fa.stop_gripper(block=False)
+        except Exception as stop_exc:
+            print(f"Stop request failed: {stop_exc}; use the physical stop.")
+        print("Stack run stopped. No automatic gripper opening or home motion; inspect the robot and cups.")
+        raise
+    finally:
+        elapsed = time.perf_counter()-started
+        if failure:
+            ok, notes = "n", failure
+        else:
+            ok = input("Did the pyramid end up correct? [y/n] ").strip().lower()
+            notes = input("Notes: ").strip()
+        log_trial(args.log, {
+            "time": datetime.datetime.now().isoformat(timespec="seconds"),
+            "goal": args.goal, "layer_by_layer": args.layer_by_layer,
+            "n_cups_available": len(cups), "n_moves": len(steps), "moves_completed": done,
+            "planned_travel_m": round(cost, 3), "plan_ms": round(plan_ms, 1),
+            "exec_s": round(elapsed, 1), "success": ok, "notes": notes,
+            "pickup_mode": "rim_down_stack", "orientation_check": "rim_down_stack",
+            "stack_xy": json.dumps(list(C.STACK_XY)),
+            "stack_pickups": json.dumps(picker.records),
+        })
+        print(f"Logged to {args.log}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--goal", help='e.g. "base layer of yellow, 2nd layer of orange, top red"')
@@ -194,10 +256,29 @@ def main():
                     help='don\'t probe; trust "orientation" in cups.json (missing = "down")')
     ap.add_argument("--probe-only", action="store_true",
                     help="probe every cup in cups.json, compare with its \"orientation\", then stop")
+    ap.add_argument("--from-stack", action="store_true",
+                    help="pick nested rim-down cups from STACK_XY; cups JSON is ordered top to bottom")
+    ap.add_argument("--stack-probe-only", action="store_true",
+                    help="force-probe STACK_XY and report its current top height, without picking")
     ap.add_argument("--log", default="experiments.csv", help="CSV file to append the trial result to")
     args = ap.parse_args()
 
+    if args.stack_probe_only:
+        if args.probe_only or args.dry_run or args.goal:
+            ap.error("--stack-probe-only is a hardware height check; use it without --goal, --probe-only or --dry-run")
+        try:
+            stack_probe_only()
+        except (ValueError, StackPickupError) as exc:
+            raise SystemExit(str(exc)) from exc
+        return
+    if args.from_stack and args.probe_only:
+        ap.error("Use --stack-probe-only for a nested stack, rather than the table orientation probe")
+
     cups = load_cups(args.cups)
+    if args.from_stack:
+        # The stack contract is rim-down throughout. Table-layout XY/orientation
+        # annotations do not apply; file order is physical top-to-bottom order.
+        cups = [replace(cup, xy=tuple(C.STACK_XY), orientation="down") for cup in cups]
     if args.probe_only:
         check_workspace([(c.id, c.xy) for c in cups])
         probe_only(cups)
@@ -214,7 +295,7 @@ def main():
     print("Goal pyramid:\n" + render(layers) + "\n")
     t0 = time.perf_counter()
     try:
-        steps, cost = plan(cups, slots, C.HOME_XY, args.layer_by_layer)
+        steps, cost = plan(cups, slots, C.HOME_XY, args.layer_by_layer, source_order=args.from_stack)
     except InfeasibleError as e:
         raise SystemExit(f"Infeasible: {e}")
     plan_ms = (time.perf_counter() - t0) * 1000
@@ -224,16 +305,34 @@ def main():
               f"  ->  layer {slot.layer + 1} pos {slot.index} {tuple(round(v, 3) for v in slot.xy)}")
     used = [cup for cup, _ in steps]
     expected_up = [c.id for c in used if c.orientation == "up"]
-    print("Orientation: " + ("not checked, trusting cups.json" if args.skip_orientation_check
-                             else f"every used cup is probed first ({C.PROBE_MODE} mode)")
-          + f"; cups.json marks {len(expected_up)} rim-up" + (f" ({', '.join(expected_up)})" if expected_up else ""))
+    if args.from_stack:
+        print("Source: nested rim-down stack at " + str(tuple(C.STACK_XY))
+              + "; cups consumed top to bottom; top height sensed before EACH pickup; no flips.")
+        print("Single-cup check: " + ("calibrated payload-force band" if C.STACK_SINGLE_WEIGHT is not None
+                                     else "UNVERIFIED; shimmy only (no payload-force band configured)"))
+    else:
+        print("Orientation: " + ("not checked, trusting cups.json" if args.skip_orientation_check
+                                 else f"every used cup is probed first ({C.PROBE_MODE} mode)")
+              + f"; cups.json marks {len(expected_up)} rim-up" + (f" ({', '.join(expected_up)})" if expected_up else ""))
     check_workspace([(c.id, c.xy) for c in cups]
-                    + [(f"{c.id} side approach", (c.xy[0] - C.SIDE_APPROACH, c.xy[1])) for c in used]
+                    + ([] if args.from_stack else [(f"{c.id} side approach", (c.xy[0] - C.SIDE_APPROACH, c.xy[1])) for c in used])
                     + [(f"slot L{s.layer + 1}.{s.index}", s.xy) for s in slots])
     if args.dry_run:
         return
 
+    if args.from_stack:
+        try:
+            validate_stack_config()
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+
     if input("\nRun on robot? [y/N] ").strip().lower() != "y":
+        return
+    if args.from_stack:
+        try:
+            run_from_stack(args, layers, cups, steps, cost, plan_ms)
+        except StackPickupError as exc:
+            raise SystemExit(str(exc)) from exc
         return
     robot = Robot(len(layers))
     robot.home()

@@ -59,9 +59,11 @@ def check_colors(cups, slots):
                               ", ".join(f"need {n} more {col}" for col, n in short.items()))
 
 
-def plan(cups, slots, start_xy, layer_by_layer=False):
+def plan(cups, slots, start_xy, layer_by_layer=False, source_order=False):
     """Returns (steps, cost): steps = [(Cup, Slot), ...] in execution order.
-    layer_by_layer=True: finish each layer before starting the next (more conservative)."""
+    layer_by_layer=True: finish each layer before starting the next (more conservative).
+    source_order=True: cups are one physical stack, listed top to bottom. Only
+    the first unused cup is accessible; buried cups cannot be skipped."""
     check_colors(cups, slots)
     d = math.dist
     nS, nC = len(slots), len(cups)
@@ -100,13 +102,16 @@ def plan(cups, slots, start_xy, layer_by_layer=False):
             for c in match[s]:
                 if used >> c & 1:
                     continue
+                if source_order and used != (1 << c) - 1:
+                    continue  # all cups above c must have been consumed first
                 nxt = (filled | 1 << s, used | 1 << c, s)
                 cost = g[state] + reach[pos][c] + carry[c][s]
                 if cost < g.get(nxt, math.inf) - 1e-12:
                     g[nxt], parent[nxt] = cost, (state, c, s)
                     heapq.heappush(frontier, (cost + h(nxt[0], nxt[1]), next(tie), nxt))
     else:
-        raise InfeasibleError("no plan found")
+        raise InfeasibleError("no plan fits the source stack's top-to-bottom colour order; "
+                              "reorder the stack or change the goal" if source_order else "no plan found")
 
     steps, cur = [], state
     while parent[cur]:

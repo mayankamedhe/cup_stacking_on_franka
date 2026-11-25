@@ -1,0 +1,11 @@
+{
+  "_comment": "Example ONLY. Array order is physical TOP to BOTTOM in one nested, rim-down stack. Replace counts/colours with your actual stack. --from-stack uses STACK_XY for all cups, overriding these XY fields.",
+  "cups": [
+    {"id": "y1", "color": "yellow", "xy": [0.5249, -0.2528], "orientation": "down"},
+    {"id": "y2", "color": "yellow", "xy": [0.5249, -0.2528], "orientation": "down"},
+    {"id": "y3", "color": "yellow", "xy": [0.5249, -0.2528], "orientation": "down"},
+    {"id": "o1", "color": "orange", "xy": [0.5249, -0.2528], "orientation": "down"},
+    {"id": "o2", "color": "orange", "xy": [0.5249, -0.2528], "orientation": "down"},
+    {"id": "r1", "color": "red", "xy": [0.5249, -0.2528], "orientation": "down"}
+  ]
+}

@@ -143,3 +143,66 @@ After each run it asks whether the pyramid came out right, plus any notes, and a
 | "Wrist can't roll 180°" on every cup | Joint 7 isn't near ±1.57 at the side grasp | Measure `SIDE_ROTATION` again (step 7) with the wrist turned so joint 7 is near ±1.57. |
 | Flipped cup lands tilted or bounces | Set-down height off | Check `TABLE_Z`, `CUP_HEIGHT` and `SIDE_GRASP_Z`. |
 | Upper cups slide off | `CUP_SPACING` or `LAYER_HEIGHT` off | Measure them again (section 1). |
+
+## 6. Nested rim-down stack source
+
+This is an alternative to spreading source cups across the table. Keep all
+source cups rim down, nested at one fixed XY, and start with an empty gripper.
+Use a holder/fixture if the lower stack moves during extraction. Place the
+source away from the pyramid and allow room for the hand's opening and shimmy.
+
+Set these in `config.py`; the three `None` height settings intentionally require
+measurements before any stack command can run:
+
+| Setting | Measurement |
+|---|---|
+| `STACK_XY` | Centre of the source stack in robot base X/Y. |
+| `STACK_SEARCH_TOP_Z` | Closed-finger **tool Z** safely above the tallest full stack, with room to establish a no-contact baseline. |
+| `STACK_SEARCH_BOTTOM_Z` | Lowest safe probe tool Z, below the top of the final single cup but **above empty-table contact**. An empty stack must produce no contact inside this interval. |
+| `STACK_GRASP_OFFSET_Z` | On one rim-down cup, measure closed-finger top-contact tool Z and your normal side-of-base grasp tool Z using the same orientation/tool offset. Enter **grasp Z minus contact Z**, a negative value. Do not enter cup height. |
+| `STACK_MIN_TOOL_Z`, `STACK_MAX_TOOL_Z` | Application bounds for the whole routine. Maximum must allow `search top + CUP_HEIGHT + CLEARANCE` and the pyramid travel height. |
+
+`PROBE_TOUCH_Z` is not used by this force search. Check `CUP_HEIGHT`, the normal
+`GRASP_WIDTH` / `GRASP_FORCE`, and `GRIPPER_ROTATION` as well. Set the grasp offset
+so only the exposed top cup is gripped, above the next nested cup's rim. If
+there is not enough exposed cup wall for the fingertips, shaking cannot solve
+the access problem; change fingers or use a dispenser fixture.
+
+1. Update a copy of `stack_cups.example.json` with actual counts and colours,
+   **topmost cup first**. Stack mode assumes all cups are rim-down and ignores
+   table-layout orientation/XY annotations. A colour needed later cannot be
+   accessed through cups above it.
+2. Preview the access order without connecting:
+   ```bash
+   python main.py --from-stack --cups stack_cups.example.json \
+     --goal "base yellow, middle orange, top red" --dry-run
+   ```
+3. Test height sensing alone. It closes the fingers, approaches from clearance,
+   force-probes the current top, prints detected contact/grasp Z, and retracts
+   without grasping:
+   ```bash
+   python main.py --stack-probe-only
+   ```
+   Confirm the reported top with a known single cup and again with a taller
+   stack. Tune the contact threshold above the observed force noise. Default
+   1.5 N is a detection threshold, not a guaranteed maximum force. Do not lower
+   the search bottom to the table to make a missed stack "work".
+4. Start with a one-cup goal and matching one-cup inventory, using `--from-stack
+   --step`. It pauses with the cup held at clearance before placement. Inspect
+   the grasp, the lower stack, and the separation motion. Adjust amplitude,
+   duration, and rise gradually; defaults are 2 mm XY, 2° yaw, two loops.
+5. For automated payload checks, collect repeated payload estimates from known
+   **zero, one, and two cups**, with the same cup type, finger configuration,
+   load model and clearance pose. Enter the one-cup centre in
+   `STACK_SINGLE_WEIGHT` (N) and a repeatable `STACK_WEIGHT_TOLERANCE`. The band
+   and observed noise must clearly separate all three cases. Noise allowance
+   must fit within the tolerance, and tolerance must be less than half one
+   cup's weight. If the estimates overlap, leave the check disabled and inspect
+   manually, or add an independent counting sensor/dispenser. Never interpret
+   successful shimmy completion as proof of a single cup.
+
+On a search, extraction, grasp, or payload-check failure, the stack run stops
+without placing, opening, or homing automatically. Check the physical robot
+and recover before rerunning. Successful/failed runs log the contact height,
+grasp height, measured payload, noise allowance, and band-check result when
+available.
